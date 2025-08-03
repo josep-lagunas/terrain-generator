@@ -1,6 +1,4 @@
 .terrain {
-    width: 1000px;
-    height: 1000px;
     border: none;
     margin: auto;
 }
@@ -10,23 +8,25 @@
     height: 200px;
     border: solid 1px;
     position: absolute;
-    left: 10px;
-    top: 50px;
     z-index: 1;
+    background: linear-gradient(to top, orange 10%, blue);
 }
 
 #terrain {
     background: linear-gradient(to top, orange 10%, blue);
     background: radial-gradient(#40404b, #111118) rgba(34, 34, 40, .94);
-    /* position: absolute; */
-    top: 50px;
     border: solid 1px;
     width: auto;
-    margin-top: 20%;
 }
 
 #file-loader {
     position: absolute;
     left: 10px;
     top: 10px;
+}
+
+html, body {
+    overflow: hidden;
+    margin: 0;
+    height: 100%;
 }

@@ -12,6 +12,10 @@
         import {loadFileContent} from "./dist/utils.js";
         import {drawCube} from "./dist/3dCube.js";
 
+        const cv_terrain = document.getElementById("terrain")
+        cv_terrain.width = window.innerWidth;
+        cv_terrain.height = 1000
+
         utils.start = start
         utils.start()
         utils.loadFileContent = loadFileContent
@@ -31,7 +35,7 @@
        <!--<input id="file-loader" type="file"/>-->
        <canvas id="axis" width="200" height="200" onchange="">
        </canvas>
-       <canvas id="terrain" width="1000" height="1000" onchange="">
+       <canvas id="terrain" onchange="">
 
        </canvas>
     </div>

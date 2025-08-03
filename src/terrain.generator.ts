@@ -6,9 +6,10 @@ import {projectPerspective, toRad, xRotatePoint, yRotatePoint, zRotatePoint} fro
 import {drawCube} from "./3dCube";
 
 
-const TRIANGLES_COLS = 250
-const TRIANGLES_ROWS = 200
-const SCL = 40
+const TRIANGLES_COLS = 100
+const TRIANGLES_ROWS = 100
+const SCL = 100
+
 
 export const start = () => {
     init()
@@ -32,12 +33,13 @@ const ctx = getContext(canvas)
 const axisCtx = getContext(axisCanvas)
 
 let flying: number = 0
-let angleX = 0
+let angleX = -60
 let angleY = 0
 let angleZ = 0
-let cameraDistance = 2.5
+let cameraDistance = 5
 let cameraZAngle = 180
-
+let moveForward = true
+let flightVelocityDelta = 0.15
 const isVisible = (triangle: Triangle3d) => {
     return true
     const pointIsVisible = (x: number, y: number) => x >= -canvas.width / 2 && x <= canvas.width / 2 && y >= -canvas.height / 2 && y <= canvas.height / 2
@@ -49,10 +51,12 @@ const isVisible = (triangle: Triangle3d) => {
 
 function get_terrain_points(height: number, width: number) {
     const points = Array<Point3d>()
+
+    flying = moveForward ? flying + flightVelocityDelta: flying - flightVelocityDelta
     let yOff = flying
-    flying -= 0.1
+
     for (let y = -height / 2; y < height / 2; y++) {
-        yOff += 0.05
+        yOff += 0.09
         let xOff = 0
         for (let x = -width / 2; x < width / 2; x++) {
             points.push({
@@ -168,14 +172,31 @@ const process = (mesh: Triangle3d[]): void => {
         angleY = angleY % 360
         angleY += 1
     }
-    if (keys["z"] && keys["Control"]) {
+    if (keys["z"] && keys["Control"] || keys["ArrowLeft"]) {
         angleZ = angleZ % 360
         angleZ -= 1
     }
-    if (keys["z"] && !keys["Control"]) {
+    if (keys["z"] && !keys["Control"] || keys["ArrowRight"]) {
         angleZ = angleZ % 360
         angleZ += 1
     }
+    if (keys["r"] || keys["ArrowUp"]) {
+        moveForward = false
+    }
+    if (keys["f"] || keys["ArrowDown"]) {
+        moveForward = true
+    }
+    if (keys["v"] && keys["Control"]) {
+        flightVelocityDelta += 0.01
+    }
+    if (keys["v"] && !keys["Control"]) {
+        if (flightVelocityDelta - 0.01 <=0) {
+            flightVelocityDelta = 0.01
+        }else {
+            flightVelocityDelta -= 0.01
+        }
+    }
+    console.log(keys)
     drawAxis(angleX, angleY, angleZ)
     cameraZAngle = (cameraZAngle + 1) % 360
     let rotatedMesh = zRotateMesh(mesh, angleZ)
@@ -197,6 +218,7 @@ const init = () => {
     ctx.translate(canvas.width / 2, canvas.height / 2)
     axisCtx.translate(axisCanvas.width / 2, axisCanvas.height / 2)
     window.addEventListener("mousemove", ev => {
+        return
         if (ev.buttons !== 1) {
             return
         }
