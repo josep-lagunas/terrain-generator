@@ -6,17 +6,19 @@ import {projectPerspective, toRad, xRotatePoint, yRotatePoint, zRotatePoint} fro
 import {drawCube} from "./3dCube";
 
 
-const TRIANGLES_COLS = 100
-const TRIANGLES_ROWS = 100
-const SCL = 100
+const TRIANGLES_COLS = 264
+const TRIANGLES_ROWS = 128
+const SCL = 16
 
 
 export const start = () => {
     init()
-    setInterval(() => {
+    const animate = () => {
         const mesh = buildTerrainMesh(TRIANGLES_COLS, TRIANGLES_ROWS)
-        process(mesh)
-    }, 30) // frames per second
+        process(mesh);
+        requestAnimationFrame(animate);
+    };
+    animate();
 }
 
 export const startFromXYZData = (xyzFileLines: string[]) => {
@@ -33,21 +35,14 @@ const ctx = getContext(canvas)
 const axisCtx = getContext(axisCanvas)
 
 let flying: number = 0
-let angleX = -60
+let angleX = 0
 let angleY = 0
 let angleZ = 0
 let cameraDistance = 5
 let cameraZAngle = 180
+const camera: Point3d = { x: 0, y: 0, z: -5000 };
 let moveForward = true
 let flightVelocityDelta = 0.15
-const isVisible = (triangle: Triangle3d) => {
-    return true
-    const pointIsVisible = (x: number, y: number) => x >= -canvas.width / 2 && x <= canvas.width / 2 && y >= -canvas.height / 2 && y <= canvas.height / 2
-
-    return !pointIsVisible(triangle.vertex1.x, triangle.vertex1.y)
-        && !pointIsVisible(triangle.vertex2.x, triangle.vertex2.y)
-        && !pointIsVisible(triangle.vertex3.x, triangle.vertex3.y)
-}
 
 function get_terrain_points(height: number, width: number) {
     const points = Array<Point3d>()
@@ -64,8 +59,8 @@ function get_terrain_points(height: number, width: number) {
                     number: noise(xOff, yOff),
                     in_min: 0,
                     in_max: 1,
-                    out_min: -200,
-                    out_max: 500
+                    out_min: -150,
+                    out_max: 450
                 })
             })
             xOff += 0.08
@@ -120,35 +115,6 @@ const buildMesh = (xyzFileLines: string[]): Triangle3d[] => {
     return mesh
 }
 
-const buildMesh2 = (xyzFileLines: string[]): Triangle3d[] => {
-
-    const mesh = Array<Triangle3d>()
-    let v1, v2, v3
-    for (let i = 0; i < xyzFileLines.length; i += 3) {
-        const splitContent1 = xyzFileLines[i].split(" ")
-        const splitContent2 = xyzFileLines[i + 1].split(" ")
-        const splitContent3 = xyzFileLines[i + 2].split(" ")
-        v1 = {
-            x: Number(splitContent1[0]) * 250,
-            y: Number(splitContent1[1]) * 250,
-            z: Number(splitContent1[2]) * 250
-        }
-        v2 = {
-            x: Number(splitContent2[0]) * 250,
-            y: Number(splitContent2[1]) * 250,
-            z: Number(splitContent2[2]) * 250
-        }
-        v3 = {
-            x: Number(splitContent3[0]) * 250,
-            y: Number(splitContent3[1]) * 250,
-            z: Number(splitContent3[2]) * 250
-        }
-        const triangle = buildTriangle(v1, v2, v3)
-        mesh.push(triangle)
-    }
-    return mesh
-}
-
 const process = (mesh: Triangle3d[]): void => {
 
     if (keys["o"]) {
@@ -172,19 +138,38 @@ const process = (mesh: Triangle3d[]): void => {
         angleY = angleY % 360
         angleY += 1
     }
-    if (keys["z"] && keys["Control"] || keys["ArrowLeft"]) {
+    if (keys["z"] && keys["Control"]) {
         angleZ = angleZ % 360
         angleZ -= 1
     }
-    if (keys["z"] && !keys["Control"] || keys["ArrowRight"]) {
+    if (keys["z"] && !keys["Control"]) {
         angleZ = angleZ % 360
         angleZ += 1
     }
-    if (keys["r"] || keys["ArrowUp"]) {
+    if (keys["r"]) {
         moveForward = false
     }
-    if (keys["f"] || keys["ArrowDown"]) {
+    if (keys["f"]) {
         moveForward = true
+    }
+    if (keys["ArrowUp"]) {
+        camera.y -= 100
+    }
+    if (keys["ArrowDown"]) {
+        camera.y += 100
+    }
+    if (keys["ArrowLeft"]) {
+        camera.x -= 100
+    }
+    if (keys["ArrowRight"]) {
+        camera.x += 100
+    }
+
+    if (keys["p"] && !keys["Control"]) {
+        camera.z! -= 100
+    }
+    if (keys["p"] && keys["Control"]) {
+        camera.z! += 100
     }
     if (keys["v"] && keys["Control"]) {
         flightVelocityDelta += 0.01
@@ -199,6 +184,7 @@ const process = (mesh: Triangle3d[]): void => {
     console.log(keys)
     drawAxis(angleX, angleY, angleZ)
     cameraZAngle = (cameraZAngle + 1) % 360
+
     let rotatedMesh = zRotateMesh(mesh, angleZ)
     rotatedMesh = yRotateMesh(rotatedMesh, angleY)
     rotatedMesh = xRotateMesh(rotatedMesh, angleX)
@@ -207,9 +193,25 @@ const process = (mesh: Triangle3d[]): void => {
         const z2 = (b.vertex1.z! + a.vertex1.z! + b.vertex2.z!) / 3
         return z1 - z2
     })
-    let projectedMesh = projectMeshPerspective(rotatedMesh, cameraDistance)
-    drawMesh(projectedMesh.filter(t => isVisible(t)))
-    //cameraZAngle = (cameraZAngle + 1) % 360
+    const translatedMesh = rotatedMesh.map(triangle => ({
+        vertex1: {
+            x: triangle.vertex1.x - camera.x,
+            y: triangle.vertex1.y - camera.y,
+            z: triangle.vertex1.z! - camera.z!
+        },
+        vertex2: {
+            x: triangle.vertex2.x - camera.x,
+            y: triangle.vertex2.y - camera.y,
+            z: triangle.vertex2.z! - camera.z!
+        },
+        vertex3: {
+            x: triangle.vertex3.x - camera.x,
+            y: triangle.vertex3.y - camera.y,
+            z: triangle.vertex3.z! - camera.z!
+        },
+    }));
+    let projectedMesh = projectMeshPerspective(translatedMesh, 0)
+    drawMesh(projectedMesh)
 }
 
 const keys: { [key: string]: boolean; } = {}

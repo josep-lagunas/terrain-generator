@@ -8,7 +8,10 @@ import {
     toRad
 } from "./3d.js"
 
-export const projectMeshPerspective = (mesh: Array<Triangle3d>, distance: number): Array<Triangle3d> => mesh.map(t => projectPerspectiveTriangle(t, distance))
+export const projectMeshPerspective = (mesh: Array<Triangle3d>, distance: number): Array<Triangle3d> => {
+    mesh = mesh.filter(t => t.vertex1.z! > 0 && t.vertex2.z! > 0 && t.vertex3.z! > 0)
+    return mesh.map(t => projectPerspectiveTriangle(t, distance))
+}
 export const projectPerspectiveTriangle = (triangle: Triangle3d, distance: number): Triangle3d => {
     //if (!triangle.vertex1 || !triangle.vertex2 || !triangle.vertex3)
     //    debugger
